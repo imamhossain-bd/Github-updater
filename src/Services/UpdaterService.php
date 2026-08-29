@@ -15,17 +15,24 @@ class UpdaterService
         $this->composer = config('github-updater.composer_path', 'composer');
     }
 
-    public function run(): array
+    // $onStep callback — protita step shesh hole tokhoni call hobe
+    public function run(?callable $onStep = null): array
     {
         $branch = config('github-updater.branch', 'main');
         $steps = [];
 
-        $steps[] = $this->execute("Pull latest code (branch: {$branch})", $this->buildGitPullCommand($branch));
+        $step = $this->execute("Pull latest code (branch: {$branch})", $this->buildGitPullCommand($branch));
+        $steps[] = $step;
+        if ($onStep) $onStep($step, 0);
 
+        $index = 1;
         foreach (config('github-updater.commands_after_pull', []) as $key) {
-            $step = $this->resolveCommand($key);
-            if ($step) {
-                $steps[] = $this->execute($step['label'], $step['command']);
+            $resolved = $this->resolveCommand($key);
+            if ($resolved) {
+                $step = $this->execute($resolved['label'], $resolved['command']);
+                $steps[] = $step;
+                if ($onStep) $onStep($step, $index);
+                $index++;
             }
         }
 
