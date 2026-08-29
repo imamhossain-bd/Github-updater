@@ -2,7 +2,8 @@
 
 return [
     'branch' => env('GITHUB_UPDATER_BRANCH', 'main'),
-    'webhook_secret' => env('GITHUB_UPDATER_SECRET'),
+    'github_token' => env('GITHUB_TOKEN'),
+    'github_repo' => env('GITHUB_REPO'),
 
     'commands_after_pull' => [
         'composer install --optimize-autoloader',

@@ -11,13 +11,27 @@ class UpdaterService
         $branch = config('github-updater.branch', 'main');
         $steps = [];
 
-        $steps[] = $this->execute("Pull latest code (branch: {$branch})", "git pull origin {$branch}");
+        $steps[] = $this->execute("Pull latest code (branch: {$branch})", $this->buildGitPullCommand($branch));
 
         foreach (config('github-updater.commands_after_pull', []) as $command) {
             $steps[] = $this->execute($command, $command);
         }
 
         return $steps;
+    }
+
+    protected function buildGitPullCommand(string $branch): string
+    {
+        $token = config('github-updater.github_token');
+        $repo = config('github-updater.github_repo');
+
+        if ($token && $repo) {
+            // Token diye authenticated pull URL banano hocche
+            return "git pull https://{$token}@github.com/{$repo}.git {$branch}";
+        }
+
+        // Token na thakle normal pull (SSH key set thakle eta chalবে)
+        return "git pull origin {$branch}";
     }
 
     protected function execute(string $label, string $command): array
