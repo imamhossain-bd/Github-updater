@@ -4,9 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use ImamHossain\GithubUpdater\Services\UpdaterService;
 
-Route::get('/github-pull', function (Request $request, UpdaterService $service) {
+Route::middleware('auth')->get('/github-pull', function (Request $request, UpdaterService $service) {
     return response()->stream(function () use ($service) {
-        // Output buffering off koro, jate protita echo shathe shathe browser e chole jay
         while (ob_get_level() > 0) {
             ob_end_flush();
         }
@@ -37,7 +36,6 @@ Route::get('/github-pull', function (Request $request, UpdaterService $service) 
                     white-space: pre-wrap; word-break: break-word; padding: 12px 15px; margin: 0;
                     color: #8fffc8; font-size: 12.5px; max-height: 300px; overflow-y: auto; background: #0a0a0a;
                 }
-                .running { color: #ffd166; }
                 .footer { margin-top: 25px; color: #00ff9c; font-size: 14px; text-shadow: 0 0 6px #00ff9c66; }
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-thumb { background: #00ff9c44; border-radius: 3px; }
@@ -73,7 +71,7 @@ Route::get('/github-pull', function (Request $request, UpdaterService $service) 
         flush();
     }, 200, [
         'Content-Type' => 'text/html; charset=UTF-8',
-        'X-Accel-Buffering' => 'no', // Nginx buffering off (live stream er jonno must)
+        'X-Accel-Buffering' => 'no',
         'Cache-Control' => 'no-cache',
     ]);
 });
