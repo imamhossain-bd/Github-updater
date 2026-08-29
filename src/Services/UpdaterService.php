@@ -95,58 +95,12 @@ class UpdaterService
         ]);
         $process->run();
 
-        $rawOutput = $this->stripAnsi($process->getOutput() . $process->getErrorOutput());
-        $success = $process->isSuccessful();
-
         return [
             'label' => $label,
             'command' => $command,
-            'output' => $this->cleanOutput($rawOutput),
-            'success' => $success,
+            'output' => $this->stripAnsi($process->getOutput() . $process->getErrorOutput()),
+            'success' => $process->isSuccessful(),
         ];
-    }
-
-    // Composer/Artisan er beshi "noise" line gula bad diye, shudhu meaningful output rakhe
-    protected function cleanOutput(string $output): string
-    {
-        $lines = explode("\n", $output);
-
-        $skipPatterns = [
-            '/^Loading composer repositories/i',
-            '/^Updating dependencies/i',
-            '/^Lock file operations/i',
-            '/^Writing lock file/i',
-            '/^Installing dependencies from lock file/i',
-            '/^Verifying lock file contents/i',
-            '/^Generating optimized autoload files/i',
-            '/^Class Modules\\\\.*does not comply/i',
-            '/^> Illuminate\\\\Foundation\\\\ComposerScripts/i',
-            '/^> @php artisan/i',
-            '/^\s*INFO\s+Discovering packages\.?\s*$/i',
-            '/^[\w\-\.\/]+\s+\.{5,}\s*(DONE)?\s*$/i',
-            '/^\d+ packages you are using are looking for funding/i',
-            '/^Use the `composer fund`/i',
-            '/^Found \d+ security vulnerability/i',
-            '/^Run "composer audit"/i',
-            '/^\s*$/',
-        ];
-
-        $filtered = [];
-        foreach ($lines as $line) {
-            $skip = false;
-            foreach ($skipPatterns as $pattern) {
-                if (preg_match($pattern, $line)) {
-                    $skip = true;
-                    break;
-                }
-            }
-            if (!$skip) {
-                $filtered[] = rtrim($line);
-            }
-        }
-
-        $result = trim(implode("\n", $filtered));
-        return $result === '' ? 'Done' : $result;
     }
 
     protected function stripAnsi(string $text): string

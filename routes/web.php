@@ -47,7 +47,7 @@ Route::get('/github-pull', function (Request $request, UpdaterService $service) 
             .step-status { font-weight: bold; font-size: 12px; }
             .step-output {
                 white-space: pre-wrap; word-break: break-word; padding: 12px 15px; margin: 0;
-                color: #8fffc8; font-size: 12.5px; max-height: 220px; overflow-y: auto; background: #0a0a0a;
+                color: #8fffc8; font-size: 12.5px; max-height: 300px; overflow-y: auto; background: #0a0a0a;
             }
             .footer { margin-top: 25px; color: #00ff9c; font-size: 14px; text-shadow: 0 0 6px #00ff9c66; }
             ::-webkit-scrollbar { width: 6px; }
