@@ -29,6 +29,13 @@ class UpdateFromGithub extends Command
     {
         $process = Process::fromShellCommandline($command, base_path());
         $process->setTimeout(300);
+
+        // Web server context e HOME env thake na, tai manually set kore dicchi
+        $process->setEnv([
+            'HOME' => getenv('HOME') ?: '/tmp',
+            'COMPOSER_HOME' => getenv('HOME') ?: '/tmp',
+        ]);
+
         $process->run(function ($type, $buffer) {
             $this->line($buffer);
         });
@@ -36,5 +43,5 @@ class UpdateFromGithub extends Command
         if (!$process->isSuccessful()) {
             $this->error("❌ Command failed: {$command}");
         }
-    }
+    }   
 }
