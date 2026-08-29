@@ -6,6 +6,15 @@ use Symfony\Component\Process\Process;
 
 class UpdaterService
 {
+    protected string $php;
+    protected string $composer;
+
+    public function __construct()
+    {
+        $this->php = config('github-updater.php_path', 'php');
+        $this->composer = config('github-updater.composer_path', 'composer');
+    }
+
     public function run(): array
     {
         $branch = config('github-updater.branch', 'main');
@@ -13,11 +22,60 @@ class UpdaterService
 
         $steps[] = $this->execute("Pull latest code (branch: {$branch})", $this->buildGitPullCommand($branch));
 
-        foreach (config('github-updater.commands_after_pull', []) as $command) {
-            $steps[] = $this->execute($command, $command);
+        foreach (config('github-updater.commands_after_pull', []) as $key) {
+            $step = $this->resolveCommand($key);
+            if ($step) {
+                $steps[] = $this->execute($step['label'], $step['command']);
+            }
         }
 
         return $steps;
+    }
+
+    protected function resolveCommand(string $key): ?array
+    {
+        return match ($key) {
+            'composer_install' => [
+                'label' => 'Composer install',
+                'command' => "{$this->php} {$this->composer} install --optimize-autoloader",
+            ],
+            'migrate' => [
+                'label' => 'Run migrations',
+                'command' => "{$this->php} artisan migrate --force",
+            ],
+            'seed' => config('github-updater.run_seeders', false)
+                ? [
+                    'label' => 'Run seeders',
+                    'command' => $this->buildSeedCommand(),
+                ]
+                : null,
+            'config_clear' => ['label' => 'Clear config', 'command' => "{$this->php} artisan config:clear"],
+            'config_cache' => ['label' => 'Cache config', 'command' => "{$this->php} artisan config:cache"],
+            'route_clear' => ['label' => 'Clear routes', 'command' => "{$this->php} artisan route:clear"],
+            'route_cache' => ['label' => 'Cache routes', 'command' => "{$this->php} artisan route:cache"],
+            'view_clear' => ['label' => 'Clear views', 'command' => "{$this->php} artisan view:clear"],
+            'view_cache' => ['label' => 'Cache views', 'command' => "{$this->php} artisan view:cache"],
+            'cache_clear' => ['label' => 'Clear application cache', 'command' => "{$this->php} artisan cache:clear"],
+            'queue_restart' => ['label' => 'Restart queue workers', 'command' => "{$this->php} artisan queue:restart"],
+            default => null,
+        };
+    }
+
+    protected function buildSeedCommand(): string
+    {
+        $seeders = config('github-updater.seeders', []);
+
+        if (empty($seeders)) {
+            return "{$this->php} artisan db:seed --force";
+        }
+
+        // Ekadhik seeder thakले, ekটার por ekটা chain kore run korবে
+        $commands = array_map(
+            fn ($seeder) => "{$this->php} artisan db:seed --class={$seeder} --force",
+            $seeders
+        );
+
+        return implode(' && ', $commands);
     }
 
     protected function buildGitPullCommand(string $branch): string
@@ -25,13 +83,9 @@ class UpdaterService
         $token = config('github-updater.github_token');
         $repo = config('github-updater.github_repo');
 
-        if ($token && $repo) {
-            // Token diye authenticated pull URL banano hocche
-            return "git pull https://{$token}@github.com/{$repo}.git {$branch}";
-        }
-
-        // Token na thakle normal pull (SSH key set thakle eta chalবে)
-        return "git pull origin {$branch}";
+        return ($token && $repo)
+            ? "git pull --ff-only https://{$token}@github.com/{$repo}.git {$branch}"
+            : "git pull --ff-only origin {$branch}";
     }
 
     protected function execute(string $label, string $command): array
