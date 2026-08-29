@@ -66,10 +66,10 @@ class UpdaterService
             return "{$this->php} artisan db:seed --force";
         }
 
-        $commands = array_map(
-            fn ($seeder) => "{$this->php} artisan db:seed --class={$seeder} --force",
-            $seeders
-        );
+        $commands = [];
+        foreach ($seeders as $seeder) {
+            $commands[] = "{$this->php} artisan db:seed --class=\"{$seeder}\" --force";
+        }
 
         return implode(' && ', $commands);
     }
@@ -101,45 +101,52 @@ class UpdaterService
         return [
             'label' => $label,
             'command' => $command,
-            'output' => $rawOutput,
-            'summary' => $this->summarize($rawOutput, $success),
+            'output' => $this->cleanOutput($rawOutput),
             'success' => $success,
         ];
     }
 
-    // Full raw output theke shudhu meaningful 1-line status ber kore ane
-    protected function summarize(string $output, bool $success): string
+    // Composer/Artisan er beshi "noise" line gula bad diye, shudhu meaningful output rakhe
+    protected function cleanOutput(string $output): string
     {
-        $lines = array_values(array_filter(array_map('trim', explode("\n", $output)), fn($l) => $l !== ''));
+        $lines = explode("\n", $output);
 
-        $patterns = [
-            '/Nothing to migrate\.?/i',
-            '/Nothing to install, update or remove\.?/i',
-            '/Already up to date\.?/i',
-            '/Configuration cached successfully\.?/i',
-            '/Routes cached successfully\.?/i',
-            '/Blade templates cached successfully\.?/i',
-            '/Application cache cleared successfully\.?/i',
-            '/Broadcasting queue restart signal\.?/i',
-            '/Migrating:.*/i',
-            '/Migrated:.*/i',
-            '/Package operations:.*/i',
+        $skipPatterns = [
+            '/^Loading composer repositories/i',
+            '/^Updating dependencies/i',
+            '/^Lock file operations/i',
+            '/^Writing lock file/i',
+            '/^Installing dependencies from lock file/i',
+            '/^Verifying lock file contents/i',
+            '/^Generating optimized autoload files/i',
+            '/^Class Modules\\\\.*does not comply/i',
+            '/^> Illuminate\\\\Foundation\\\\ComposerScripts/i',
+            '/^> @php artisan/i',
+            '/^\s*INFO\s+Discovering packages\.?\s*$/i',
+            '/^[\w\-\.\/]+\s+\.{5,}\s*(DONE)?\s*$/i',
+            '/^\d+ packages you are using are looking for funding/i',
+            '/^Use the `composer fund`/i',
+            '/^Found \d+ security vulnerability/i',
+            '/^Run "composer audit"/i',
+            '/^\s*$/',
         ];
 
+        $filtered = [];
         foreach ($lines as $line) {
-            foreach ($patterns as $pattern) {
+            $skip = false;
+            foreach ($skipPatterns as $pattern) {
                 if (preg_match($pattern, $line)) {
-                    return $line;
+                    $skip = true;
+                    break;
                 }
+            }
+            if (!$skip) {
+                $filtered[] = rtrim($line);
             }
         }
 
-        if (!$success) {
-            // Fail hole shesher meaningful line dekhায় (error hint)
-            return $lines[array_key_last($lines)] ?? 'Command failed';
-        }
-
-        return 'Done';
+        $result = trim(implode("\n", $filtered));
+        return $result === '' ? 'Done' : $result;
     }
 
     protected function stripAnsi(string $text): string

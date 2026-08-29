@@ -11,8 +11,7 @@ Route::get('/github-pull', function (Request $request, UpdaterService $service) 
     foreach ($steps as $i => $step) {
         $status = $step['success'] ? '✔ SUCCESS' : '✘ FAILED';
         $color = $step['success'] ? '#00ff9c' : '#ff4d4d';
-        $summary = htmlspecialchars($step['summary']);
-        $fullOutput = htmlspecialchars($step['output']);
+        $output = htmlspecialchars($step['output']);
         $rows .= <<<HTML
         <div class="step">
             <div class="step-header">
@@ -20,11 +19,7 @@ Route::get('/github-pull', function (Request $request, UpdaterService $service) 
                 <span class="step-label">{$step['label']}</span>
                 <span class="step-status" style="color:{$color}">{$status}</span>
             </div>
-            <div class="step-summary">&gt; {$summary}</div>
-            <details class="step-details">
-                <summary>view full log</summary>
-                <pre class="step-output">{$fullOutput}</pre>
-            </details>
+            <pre class="step-output">{$output}</pre>
         </div>
         HTML;
     }
@@ -36,77 +31,23 @@ Route::get('/github-pull', function (Request $request, UpdaterService $service) 
         <meta charset="UTF-8">
         <title>GitHub Deploy Console</title>
         <style>
-            body {
-                background: #0d0d0d;
-                color: #00ff9c;
-                font-family: 'Courier New', monospace;
-                padding: 30px;
-                margin: 0;
-            }
+            body { background: #0d0d0d; color: #00ff9c; font-family: 'Courier New', monospace; padding: 30px; margin: 0; }
             .hacker-name {
-                text-align: center;
-                font-size: 42px;
-                font-weight: bold;
-                letter-spacing: 8px;
-                color: #00ff9c;
+                text-align: center; font-size: 42px; font-weight: bold; letter-spacing: 8px; color: #00ff9c;
                 text-shadow: 0 0 5px #00ff9c, 0 0 15px #00ff9c, 0 0 30px #00ff9c88, 0 0 50px #00ff9c44;
-                margin-bottom: 20px;
-                animation: flicker 3s infinite alternate;
+                margin-bottom: 20px; animation: flicker 3s infinite alternate;
             }
-            @keyframes flicker {
-                0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
-                20%, 22%, 24%, 55% { opacity: 0.7; }
-            }
-            h1 {
-                color: #00ff9c;
-                text-shadow: 0 0 8px #00ff9c88;
-                border-bottom: 1px solid #00ff9c44;
-                padding-bottom: 10px;
-                font-size: 22px;
-            }
+            @keyframes flicker { 0%,19%,21%,23%,25%,54%,56%,100% { opacity:1; } 20%,22%,24%,55% { opacity:0.7; } }
+            h1 { color: #00ff9c; text-shadow: 0 0 8px #00ff9c88; border-bottom: 1px solid #00ff9c44; padding-bottom: 10px; font-size: 22px; }
             .subtitle { color: #666; margin-bottom: 25px; font-size: 13px; }
-            .step {
-                background: #111;
-                border: 1px solid #1f1f1f;
-                border-left: 3px solid #00ff9c;
-                margin-bottom: 12px;
-                border-radius: 4px;
-                padding: 12px 16px;
-            }
-            .step-header {
-                display: flex;
-                gap: 12px;
-                align-items: center;
-                margin-bottom: 6px;
-            }
+            .step { background: #111; border: 1px solid #1f1f1f; border-left: 3px solid #00ff9c; margin-bottom: 12px; border-radius: 4px; overflow: hidden; }
+            .step-header { display: flex; gap: 12px; padding: 10px 15px; background: #161616; align-items: center; }
             .step-num { color: #555; }
             .step-label { flex: 1; color: #e0e0e0; }
             .step-status { font-weight: bold; font-size: 12px; }
-            .step-summary {
-                color: #7dffc4;
-                font-size: 13px;
-                padding-left: 2px;
-                margin-bottom: 6px;
-            }
-            .step-details summary {
-                cursor: pointer;
-                color: #555;
-                font-size: 11px;
-                user-select: none;
-                outline: none;
-            }
-            .step-details summary:hover { color: #00ff9c; }
             .step-output {
-                white-space: pre-wrap;
-                word-break: break-word;
-                padding: 10px 12px;
-                margin: 8px 0 0 0;
-                color: #6b6b6b;
-                font-size: 11.5px;
-                max-height: 200px;
-                overflow-y: auto;
-                background: #0a0a0a;
-                border-radius: 3px;
+                white-space: pre-wrap; word-break: break-word; padding: 12px 15px; margin: 0;
+                color: #8fffc8; font-size: 12.5px; max-height: 220px; overflow-y: auto; background: #0a0a0a;
             }
             .footer { margin-top: 25px; color: #00ff9c; font-size: 14px; text-shadow: 0 0 6px #00ff9c66; }
             ::-webkit-scrollbar { width: 6px; }
