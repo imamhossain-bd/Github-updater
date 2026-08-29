@@ -43,6 +43,24 @@ Route::get('/github-pull', function (Request $request, UpdaterService $service) 
                 padding: 30px;
                 margin: 0;
             }
+            .hacker-name {
+                text-align: center;
+                font-size: 42px;
+                font-weight: bold;
+                letter-spacing: 8px;
+                color: #00ff9c;
+                text-shadow:
+                    0 0 5px #00ff9c,
+                    0 0 15px #00ff9c,
+                    0 0 30px #00ff9c88,
+                    0 0 50px #00ff9c44;
+                margin-bottom: 20px;
+                animation: flicker 3s infinite alternate;
+            }
+            @keyframes flicker {
+                0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+                20%, 22%, 24%, 55% { opacity: 0.7; }
+            }
             h1 {
                 color: #00ff9c;
                 text-shadow: 0 0 8px #00ff9c88;
@@ -90,6 +108,7 @@ Route::get('/github-pull', function (Request $request, UpdaterService $service) 
         </style>
     </head>
     <body>
+        <div class="hacker-name">IMAM HOSSAIN</div>
         <h1>&gt; GITHUB DEPLOY CONSOLE_</h1>
         <div class="subtitle">Executed at {$request->server('REQUEST_TIME_FLOAT')} — imamhossain/github-updater</div>
         {$rows}
