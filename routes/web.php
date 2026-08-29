@@ -2,10 +2,19 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use ImamHossain\GithubUpdater\Services\UpdaterService;
 
-// Auth required — login na thakle deploy console access hobe na
-Route::middleware('auth')->get('/github-pull', function (Request $request, UpdaterService $service) {
+Route::get('/github-pull', function (Request $request, UpdaterService $service) {
+    if (!Auth::check()) {
+        return response('
+            <div style="font-family:monospace;background:#0d0d0d;color:#ff4d4d;padding:40px;text-align:center;">
+                <h2>Access Denied</h2>
+                <p>You must be logged in to access this page.</p>
+            </div>
+        ', 403);
+    }
+
     return response()->stream(function () use ($service) {
         while (ob_get_level() > 0) {
             ob_end_flush();
