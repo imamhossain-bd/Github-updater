@@ -37,17 +37,14 @@ class UpdaterService
         return match ($key) {
             'composer_install' => [
                 'label' => 'Composer install',
-                'command' => "{$this->php} {$this->composer} install --optimize-autoloader",
+                'command' => "{$this->php} {$this->composer} install --optimize-autoloader --no-interaction",
             ],
             'migrate' => [
                 'label' => 'Run migrations',
                 'command' => "{$this->php} artisan migrate --force",
             ],
             'seed' => config('github-updater.run_seeders', false)
-                ? [
-                    'label' => 'Run seeders',
-                    'command' => $this->buildSeedCommand(),
-                ]
+                ? ['label' => 'Run seeders', 'command' => $this->buildSeedCommand()]
                 : null,
             'config_clear' => ['label' => 'Clear config', 'command' => "{$this->php} artisan config:clear"],
             'config_cache' => ['label' => 'Cache config', 'command' => "{$this->php} artisan config:cache"],
@@ -69,7 +66,6 @@ class UpdaterService
             return "{$this->php} artisan db:seed --force";
         }
 
-        // Ekadhik seeder thakले, ekটার por ekটা chain kore run korবে
         $commands = array_map(
             fn ($seeder) => "{$this->php} artisan db:seed --class={$seeder} --force",
             $seeders
@@ -99,12 +95,51 @@ class UpdaterService
         ]);
         $process->run();
 
+        $rawOutput = $this->stripAnsi($process->getOutput() . $process->getErrorOutput());
+        $success = $process->isSuccessful();
+
         return [
             'label' => $label,
             'command' => $command,
-            'output' => $this->stripAnsi($process->getOutput() . $process->getErrorOutput()),
-            'success' => $process->isSuccessful(),
+            'output' => $rawOutput,
+            'summary' => $this->summarize($rawOutput, $success),
+            'success' => $success,
         ];
+    }
+
+    // Full raw output theke shudhu meaningful 1-line status ber kore ane
+    protected function summarize(string $output, bool $success): string
+    {
+        $lines = array_values(array_filter(array_map('trim', explode("\n", $output)), fn($l) => $l !== ''));
+
+        $patterns = [
+            '/Nothing to migrate\.?/i',
+            '/Nothing to install, update or remove\.?/i',
+            '/Already up to date\.?/i',
+            '/Configuration cached successfully\.?/i',
+            '/Routes cached successfully\.?/i',
+            '/Blade templates cached successfully\.?/i',
+            '/Application cache cleared successfully\.?/i',
+            '/Broadcasting queue restart signal\.?/i',
+            '/Migrating:.*/i',
+            '/Migrated:.*/i',
+            '/Package operations:.*/i',
+        ];
+
+        foreach ($lines as $line) {
+            foreach ($patterns as $pattern) {
+                if (preg_match($pattern, $line)) {
+                    return $line;
+                }
+            }
+        }
+
+        if (!$success) {
+            // Fail hole shesher meaningful line dekhায় (error hint)
+            return $lines[array_key_last($lines)] ?? 'Command failed';
+        }
+
+        return 'Done';
     }
 
     protected function stripAnsi(string $text): string

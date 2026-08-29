@@ -6,208 +6,119 @@ use ImamHossain\GithubUpdater\Services\UpdaterService;
 
 Route::get('/github-pull', function (Request $request, UpdaterService $service) {
     $steps = $service->run();
-    $totalSteps = count($steps);
-    $successCount = count(array_filter($steps, fn($s) => $s['success']));
-    $failCount = $totalSteps - $successCount;
-    $allSuccess = $failCount === 0;
 
     $rows = '';
     foreach ($steps as $i => $step) {
-        $isSuccess = $step['success'];
-        $badgeClass = $isSuccess ? 'badge-success' : 'badge-fail';
-        $icon = $isSuccess ? '✓' : '✕';
-        $borderClass = $isSuccess ? 'border-success' : 'border-fail';
-        $output = htmlspecialchars($step['output']);
+        $status = $step['success'] ? '✔ SUCCESS' : '✘ FAILED';
+        $color = $step['success'] ? '#00ff9c' : '#ff4d4d';
+        $summary = htmlspecialchars($step['summary']);
+        $fullOutput = htmlspecialchars($step['output']);
         $rows .= <<<HTML
-        <div class="card {$borderClass}">
-            <div class="card-header">
-                <div class="card-title">
-                    <span class="step-icon {$badgeClass}">{$icon}</span>
-                    <span class="step-name">{$step['label']}</span>
-                </div>
-                <span class="badge {$badgeClass}">{$icon} {$step['label']}</span>
+        <div class="step">
+            <div class="step-header">
+                <span class="step-num">[{$i}]</span>
+                <span class="step-label">{$step['label']}</span>
+                <span class="step-status" style="color:{$color}">{$status}</span>
             </div>
-            <pre class="card-output">{$output}</pre>
+            <div class="step-summary">&gt; {$summary}</div>
+            <details class="step-details">
+                <summary>view full log</summary>
+                <pre class="step-output">{$fullOutput}</pre>
+            </details>
         </div>
         HTML;
     }
-
-    $summaryClass = $allSuccess ? 'summary-success' : 'summary-fail';
-    $summaryText = $allSuccess ? 'All steps completed successfully' : "{$failCount} step(s) failed";
 
     $html = <<<HTML
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="UTF-8">
-        <title>Deploy Dashboard</title>
+        <title>GitHub Deploy Console</title>
         <style>
-            * { box-sizing: border-box; }
             body {
-                background: #f4f6f8;
-                color: #1a1d23;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #0d0d0d;
+                color: #00ff9c;
+                font-family: 'Courier New', monospace;
+                padding: 30px;
                 margin: 0;
-                padding: 40px 24px;
             }
-            .container { max-width: 900px; margin: 0 auto; }
-            .header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 24px;
-                flex-wrap: wrap;
-                gap: 12px;
+            .hacker-name {
+                text-align: center;
+                font-size: 42px;
+                font-weight: bold;
+                letter-spacing: 8px;
+                color: #00ff9c;
+                text-shadow: 0 0 5px #00ff9c, 0 0 15px #00ff9c, 0 0 30px #00ff9c88, 0 0 50px #00ff9c44;
+                margin-bottom: 20px;
+                animation: flicker 3s infinite alternate;
             }
-            .header-left h1 {
+            @keyframes flicker {
+                0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+                20%, 22%, 24%, 55% { opacity: 0.7; }
+            }
+            h1 {
+                color: #00ff9c;
+                text-shadow: 0 0 8px #00ff9c88;
+                border-bottom: 1px solid #00ff9c44;
+                padding-bottom: 10px;
                 font-size: 22px;
-                font-weight: 700;
-                margin: 0 0 4px 0;
-                color: #1a1d23;
             }
-            .header-left p {
-                margin: 0;
+            .subtitle { color: #666; margin-bottom: 25px; font-size: 13px; }
+            .step {
+                background: #111;
+                border: 1px solid #1f1f1f;
+                border-left: 3px solid #00ff9c;
+                margin-bottom: 12px;
+                border-radius: 4px;
+                padding: 12px 16px;
+            }
+            .step-header {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                margin-bottom: 6px;
+            }
+            .step-num { color: #555; }
+            .step-label { flex: 1; color: #e0e0e0; }
+            .step-status { font-weight: bold; font-size: 12px; }
+            .step-summary {
+                color: #7dffc4;
                 font-size: 13px;
-                color: #6b7280;
+                padding-left: 2px;
+                margin-bottom: 6px;
             }
-            .header-right {
-                display: flex;
-                align-items: center;
-                gap: 10px;
+            .step-details summary {
+                cursor: pointer;
+                color: #555;
+                font-size: 11px;
+                user-select: none;
+                outline: none;
             }
-            .avatar {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: 700;
-                font-size: 15px;
-            }
-            .owner-name {
-                font-size: 14px;
-                font-weight: 600;
-                color: #374151;
-            }
-            .summary-bar {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                padding: 14px 18px;
-                border-radius: 10px;
-                margin-bottom: 24px;
-                font-size: 14px;
-                font-weight: 600;
-            }
-            .summary-success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
-            .summary-fail { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-            .summary-stats {
-                margin-left: auto;
-                display: flex;
-                gap: 16px;
-                font-size: 13px;
-                font-weight: 500;
-            }
-            .cards { display: flex; flex-direction: column; gap: 12px; }
-            .card {
-                background: #ffffff;
-                border-radius: 12px;
-                border: 1px solid #e5e7eb;
-                border-left: 4px solid #e5e7eb;
-                overflow: hidden;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-            }
-            .border-success { border-left-color: #10b981; }
-            .border-fail { border-left-color: #ef4444; }
-            .card-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 14px 18px;
-                background: #fafbfc;
-                border-bottom: 1px solid #f0f1f3;
-            }
-            .card-title {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-            .step-icon {
-                width: 22px;
-                height: 22px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                font-weight: 700;
-                color: white;
-            }
-            .step-icon.badge-success { background: #10b981; }
-            .step-icon.badge-fail { background: #ef4444; }
-            .step-name {
-                font-size: 14px;
-                font-weight: 600;
-                color: #1f2937;
-                font-family: 'SF Mono', Consolas, monospace;
-            }
-            .badge {
-                display: none;
-            }
-            .card-output {
-                margin: 0;
-                padding: 14px 18px;
-                font-family: 'SF Mono', Consolas, 'Courier New', monospace;
-                font-size: 12px;
-                line-height: 1.6;
-                color: #6b7280;
+            .step-details summary:hover { color: #00ff9c; }
+            .step-output {
                 white-space: pre-wrap;
                 word-break: break-word;
-                max-height: 220px;
+                padding: 10px 12px;
+                margin: 8px 0 0 0;
+                color: #6b6b6b;
+                font-size: 11.5px;
+                max-height: 200px;
                 overflow-y: auto;
-                background: #ffffff;
+                background: #0a0a0a;
+                border-radius: 3px;
             }
-            .footer-note {
-                text-align: center;
-                margin-top: 24px;
-                font-size: 12px;
-                color: #9ca3af;
-            }
+            .footer { margin-top: 25px; color: #00ff9c; font-size: 14px; text-shadow: 0 0 6px #00ff9c66; }
             ::-webkit-scrollbar { width: 6px; }
-            ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+            ::-webkit-scrollbar-thumb { background: #00ff9c44; border-radius: 3px; }
         </style>
     </head>
     <body>
-        <div class="container">
-            <div class="header">
-                <div class="header-left">
-                    <h1>Deploy Dashboard</h1>
-                    <p>imamhossain/github-updater · executed just now</p>
-                </div>
-                <div class="header-right">
-                    <div class="avatar">IH</div>
-                    <span class="owner-name">Imam Hossain</span>
-                </div>
-            </div>
-
-            <div class="summary-bar {$summaryClass}">
-                <span>{$summaryText}</span>
-                <div class="summary-stats">
-                    <span>✓ {$successCount} passed</span>
-                    <span>✕ {$failCount} failed</span>
-                    <span>{$totalSteps} total</span>
-                </div>
-            </div>
-
-            <div class="cards">
-                {$rows}
-            </div>
-
-            <div class="footer-note">Deployment pipeline finished · imamhossain/github-updater v1.2.0</div>
-        </div>
+        <div class="hacker-name">IMAM HOSSAIN</div>
+        <h1>&gt; GITHUB DEPLOY CONSOLE_</h1>
+        <div class="subtitle">Executed at {$request->server('REQUEST_TIME_FLOAT')} — imamhossain/github-updater</div>
+        {$rows}
+        <div class="footer">&gt; All processes finished. Connection closed._</div>
     </body>
     </html>
     HTML;
