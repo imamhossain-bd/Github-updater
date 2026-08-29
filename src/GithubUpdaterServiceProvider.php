@@ -14,11 +14,9 @@ class GithubUpdaterServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                UpdateFromGithub::class,
-            ]);
-        }
+        $this->commands([
+            UpdateFromGithub::class,
+        ]);
 
         $this->publishes([
             __DIR__.'/../config/github-updater.php' => config_path('github-updater.php'),
