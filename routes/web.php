@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use ImamHossain\GithubUpdater\Services\UpdaterService;
 
+// Auth required — login na thakle deploy console access hobe na
 Route::middleware('auth')->get('/github-pull', function (Request $request, UpdaterService $service) {
     return response()->stream(function () use ($service) {
         while (ob_get_level() > 0) {
