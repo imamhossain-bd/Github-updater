@@ -22,24 +22,30 @@ class UpdateFromGithub extends Command
             $this->runProcess($command);
         }
 
-        $this->info('✅ Update complete!');
+        $this->info('Update complete!');
     }
 
     protected function runProcess(string $command)
     {
-        $process = Process::fromShellCommandline($command . ' --no-ansi', base_path());
+        $process = Process::fromShellCommandline($command, base_path());
         $process->setTimeout(300);
         $process->setEnv([
             'HOME' => getenv('HOME') ?: '/tmp',
             'COMPOSER_HOME' => getenv('HOME') ?: '/tmp',
+            'NO_COLOR' => '1',
         ]);
 
         $process->run(function ($type, $buffer) {
-            $this->line($buffer);
+            $this->line($this->stripAnsi($buffer));
         });
 
         if (!$process->isSuccessful()) {
-            $this->error("❌ Command failed: {$command}");
+            $this->error("Command failed: {$command}");
         }
-    } 
+    }
+
+    protected function stripAnsi(string $text): string
+    {
+        return preg_replace('/\x1B\[[0-9;]*[a-zA-Z]/', '', $text);
+    }
 }
