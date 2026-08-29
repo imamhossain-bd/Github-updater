@@ -5,8 +5,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use ImamHossain\GithubUpdater\Services\UpdaterService;
 
-Route::get('/github-pull', function (Request $request, UpdaterService $service) {
-    if (!Auth::check()) {
+Route::middleware('web')->get('/github-pull', function (Request $request, UpdaterService $service) {
+
+    if (!Auth::guard('web')->check()) {
         return response('
             <div style="font-family:monospace;background:#0d0d0d;color:#ff4d4d;padding:40px;text-align:center;">
                 <h2>Access Denied</h2>
